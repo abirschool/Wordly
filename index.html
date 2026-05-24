@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="wordly-api-base" content="https://abir-wordly.vercel.app">
+    <title>Wordly</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+
+    <div class="wrapper">
+        
+        <h1 class="title">Wordly</h1>
+
+        <div class="container">
+
+            <textarea class="text-input" placeholder="Paste text here.." ></textarea>
+
+            <div class="counters">
+
+                <h3>Words: <span class="wordDisplay">0</span></h3>
+
+                <h3>Characters: <span class="characterDisplay">0</span></h3>
+
+            </div>
+
+        
+
+        </div>
+
+
+        <button onclick="EnhanceGrammar()" class="enhanceBtn">Enhance Grammar</button>
+        <p class="enhanceStatus" aria-live="polite"></p>
+
+    </div>
+
+
+    <script src="script.js?v=2"></script>
+
+
+</body>
+</html>

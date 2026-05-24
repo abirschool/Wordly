@@ -1,0 +1,128 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+}
+
+body{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 10px;
+    background: linear-gradient(180deg, white, rgb(146, 255, 220), white);
+}
+
+.wrapper{
+    transform: scale(1.105);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.title{
+    position: relative;
+    top: -20px;
+    font-size: 3rem;
+}
+
+.text-input{
+    padding: 10px;
+    width: 600px;
+    height: 300px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    outline: none;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    resize: none;
+}
+
+.counters{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    gap: 60px;
+    position: relative;
+    top: 10px;
+}
+
+@media (max-width: 640px){
+    body{
+        min-height: 100vh;
+        height: auto;
+        padding: 16px;
+    }
+
+    .wrapper{
+        width: 100%;
+        max-width: 100%;
+        transform: none;
+    }
+
+    .text-input{
+        width: 100%;
+        max-width: 600px;
+        height: 240px;
+    }
+
+    .title{
+        font-size: 2.2rem;
+        top: -10px;
+    }
+
+    .counters{
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .enhanceBtn{
+        width: 100%;
+        max-width: 320px;
+    }
+}
+
+.enhanceBtn{
+    position: relative;
+    top: 40px;
+    width: 150px;
+    height: 35px;
+    border: none;
+    border-radius: 15px;
+    outline: none;
+    background: linear-gradient(180deg, white, rgb(115, 255, 197));
+    font-weight: 600;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease-in-out;
+}
+
+.enhanceBtn:hover{
+    transform: scale(1.05);
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease-in-out;
+}
+
+.enhanceBtn:active{
+    transform: scale(0.95);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+.enhanceBtn.loading{
+    background: linear-gradient(180deg, rgb(245, 245, 245), rgb(178, 255, 225));
+    color: rgba(0, 0, 0, 0.65);
+    cursor: not-allowed;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+}
+
+.enhanceStatus{
+    position: relative;
+    top: 60px;
+    min-height: 24px;
+    font-weight: 600;
+    color: rgb(21, 89, 63);
+}
