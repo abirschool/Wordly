@@ -50,6 +50,41 @@ body{
     top: 10px;
 }
 
+@media (max-width: 640px){
+    body{
+        min-height: 100vh;
+        height: auto;
+        padding: 16px;
+    }
+
+    .wrapper{
+        width: 100%;
+        max-width: 100%;
+        transform: none;
+    }
+
+    .text-input{
+        width: 100%;
+        max-width: 600px;
+        height: 240px;
+    }
+
+    .title{
+        font-size: 2.2rem;
+        top: -10px;
+    }
+
+    .counters{
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .enhanceBtn{
+        width: 100%;
+        max-width: 320px;
+    }
+}
+
 .enhanceBtn{
     position: relative;
     top: 40px;
