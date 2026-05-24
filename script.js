@@ -7,6 +7,7 @@ let characters = document.querySelector(".characterDisplay");
 const enhanceButton = document.querySelector(".enhanceBtn");
 const enhanceStatus = document.querySelector(".enhanceStatus");
 const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const isGitHubPages = window.location.hostname.endsWith("github.io");
 const apiMetaTag = document.querySelector('meta[name="wordly-api-base"]');
 const configuredApiBase = (apiMetaTag?.content || "").trim().replace(/\/+$/, "");
 const apiBase = isLocalHost ? "http://localhost:3000" : configuredApiBase;
@@ -52,7 +53,7 @@ async function EnhanceGrammar(){
         return;
     }
 
-    if (!apiBase) {
+    if (isGitHubPages && !apiBase) {
         enhanceStatus.textContent = "Backend URL missing. Set meta[name='wordly-api-base'] for deployed frontend.";
         alert("Backend URL is not configured. Add your deployed backend URL to the wordly-api-base meta tag in index.html.");
         return;
@@ -66,7 +67,8 @@ async function EnhanceGrammar(){
     enhanceStatus.textContent = "Enhancing your text...";
 
     try {
-        const response = await fetch(`${apiBase}/api/enhance`, {
+        const endpoint = apiBase ? `${apiBase}/api/enhance` : "/api/enhance";
+        const response = await fetch(endpoint, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -92,8 +94,14 @@ async function EnhanceGrammar(){
             enhanceStatus.textContent = "Grammar enhanced successfully.";
         }
     } catch (error) {
-        enhanceStatus.textContent = "Enhancement failed. Check server/API key.";
-        alert(`Could not enhance grammar: ${error.message}`);
+        const isNetworkError = error instanceof TypeError;
+        if (isNetworkError) {
+            enhanceStatus.textContent = "Cannot reach backend. Run npm start and keep server.js running on port 3000.";
+            alert("Could not reach backend at http://localhost:3000. Start backend with: npm start");
+        } else {
+            enhanceStatus.textContent = "Enhancement failed. Check server/API key.";
+            alert(`Could not enhance grammar: ${error.message}`);
+        }
         console.error(error);
     } finally {
         enhanceButton.textContent = oldButtonText;

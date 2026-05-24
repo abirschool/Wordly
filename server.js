@@ -4,20 +4,26 @@ const path = require("path");
 
 const app = express();
 const port = process.env.PORT || 3000;
+const frontendOrigins = (process.env.FRONTEND_ORIGINS || "https://abirschool.github.io")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
-const allowedOrigins = new Set([
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://127.0.0.1:5501",
-    "http://localhost:5501",
-    `http://127.0.0.1:${port}`,
-    `http://localhost:${port}`
-]);
+const allowedOrigins = new Set(frontendOrigins);
+
+function isLocalOrigin(origin) {
+    try {
+        const url = new URL(origin);
+        return ["localhost", "127.0.0.1"].includes(url.hostname);
+    } catch {
+        return false;
+    }
+}
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;
 
-    if (origin && allowedOrigins.has(origin)) {
+    if (origin && (allowedOrigins.has(origin) || isLocalOrigin(origin))) {
         res.setHeader("Access-Control-Allow-Origin", origin);
         res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type");
