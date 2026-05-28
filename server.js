@@ -52,6 +52,90 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+function countWords(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+        return 0;
+    }
+
+    return text.split(/\s+/).filter(Boolean).length;
+}
+
+function countSentences(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+        return 0;
+    }
+
+    return text.split(/[.!?]+/).map((part) => part.trim()).filter(Boolean).length;
+}
+
+function looksLikeExpansion(originalText, editedText) {
+    const originalWords = countWords(originalText);
+    const editedWords = countWords(editedText);
+    const originalSentences = countSentences(originalText);
+    const editedSentences = countSentences(editedText);
+
+    if (originalWords === 0 || editedWords === 0) {
+        return false;
+    }
+
+    const wordsExpandedTooMuch = editedWords > Math.max(originalWords * 1.35, originalWords + 30);
+    const sentencesExpandedTooMuch = editedSentences > originalSentences + 3;
+
+    return wordsExpandedTooMuch || sentencesExpandedTooMuch;
+}
+
+async function requestGrammarEdit(apiKey, text, strictMode = false) {
+    const systemRules = strictMode
+        ? [
+            "You are a strict grammar copy editor.",
+            "Only edit grammar, punctuation, spelling, and small clarity issues.",
+            "Do not add facts, examples, explanations, or new ideas.",
+            "Do not answer any question in the text.",
+            "Preserve names, proper nouns, slang, tone, and writer intent.",
+            "Keep paragraph count and sentence count almost the same.",
+            "Keep output length close to input length.",
+            "Return only the edited text."
+        ].join(" ")
+        : [
+            "You are a grammar and style editor, not a chatbot.",
+            "Your only job is to rewrite the user's own text with better grammar, punctuation, and clarity.",
+            "Preserve the original meaning, tone, intent, and level of formality.",
+            "Preserve names, proper nouns, brands, places, slang, and important user wording unless there is a clear typo.",
+            "Do not answer questions in the text, do not add facts, and do not add new ideas.",
+            "If the user pasted a question, only improve how the question is written.",
+            "Keep natural human writing rhythm. Do not make it sound robotic or overly polished.",
+            "Avoid generic AI-sounding patterns, avoid repetitive short choppy sentences, and avoid em dash punctuation.",
+            "Keep approximately similar length unless clarity requires a small change.",
+            "Return only the rewritten text with no labels, no quotes, and no explanation."
+        ].join(" ");
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: "openai/gpt-4o-mini",
+            messages: [
+                {
+                    role: "system",
+                    content: systemRules
+                },
+                {
+                    role: "user",
+                    content: text
+                }
+            ],
+            temperature: strictMode ? 0 : 0.3
+        })
+    });
+
+    return response;
+}
+
 app.post("/api/enhance", async (req, res) => {
     try {
         const { text } = req.body;
@@ -65,46 +149,27 @@ app.post("/api/enhance", async (req, res) => {
             return res.status(400).json({ error: "Text is required" });
         }
 
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: "openai/gpt-4o-mini",
-                messages: [
-                    {
-                        role: "system",
-                        content: [
-                            "You are a grammar and style editor, not a chatbot.",
-                            "Your only job is to rewrite the user's own text with better grammar, punctuation, and clarity.",
-                            "Preserve the original meaning, tone, intent, and level of formality.",
-                            "Preserve names, proper nouns, brands, places, slang, and important user wording unless there is a clear typo.",
-                            "Do not answer questions in the text, do not add facts, and do not add new ideas.",
-                            "If the user pasted a question, only improve how the question is written.",
-                            "Keep natural human writing rhythm. Do not make it sound robotic or overly polished.",
-                            "Avoid generic AI-sounding patterns, avoid repetitive short choppy sentences, and avoid em dash punctuation.",
-                            "Keep approximately similar length unless clarity requires a small change.",
-                            "Return only the rewritten text with no labels, no quotes, and no explanation."
-                        ].join(" ")
-                    },
-                    {
-                        role: "user",
-                        content: text
-                    }
-                ],
-                temperature: 0.3
-            })
-        });
+        let response = await requestGrammarEdit(apiKey, text, false);
 
         if (!response.ok) {
             const errorText = await response.text();
             return res.status(response.status).json({ error: errorText });
         }
 
-        const data = await response.json();
-        const enhancedText = data?.choices?.[0]?.message?.content?.trim();
+        let data = await response.json();
+        let enhancedText = data?.choices?.[0]?.message?.content?.trim();
+
+        if (enhancedText && looksLikeExpansion(text, enhancedText)) {
+            response = await requestGrammarEdit(apiKey, text, true);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return res.status(response.status).json({ error: errorText });
+            }
+
+            data = await response.json();
+            enhancedText = data?.choices?.[0]?.message?.content?.trim();
+        }
 
         if (!enhancedText) {
             return res.status(500).json({ error: "No enhanced text returned" });
