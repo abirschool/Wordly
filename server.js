@@ -70,6 +70,61 @@ function countSentences(value) {
     return text.split(/[.!?]+/).map((part) => part.trim()).filter(Boolean).length;
 }
 
+function tokenize(value) {
+    return String(value || "")
+        .toLowerCase()
+        .match(/[a-z0-9']+/g) || [];
+}
+
+function lexicalOverlapRatio(originalText, editedText) {
+    const originalTokens = tokenize(originalText).filter((token) => token.length > 2);
+    const editedTokens = tokenize(editedText).filter((token) => token.length > 2);
+
+    if (!originalTokens.length || !editedTokens.length) {
+        return 1;
+    }
+
+    const originalSet = new Set(originalTokens);
+    const editedSet = new Set(editedTokens);
+    let overlapCount = 0;
+
+    for (const token of originalSet) {
+        if (editedSet.has(token)) {
+            overlapCount += 1;
+        }
+    }
+
+    return overlapCount / originalSet.size;
+}
+
+function detectChatbotDrift(originalText, editedText) {
+    const originalWords = countWords(originalText);
+    const editedWords = countWords(editedText);
+    const originalHasQuestion = /\?/.test(originalText);
+    const editedHasQuestion = /\?/.test(editedText);
+    const overlap = lexicalOverlapRatio(originalText, editedText);
+
+    if (originalHasQuestion && !editedHasQuestion) {
+        return true;
+    }
+
+    if (originalWords <= 25 && editedWords > originalWords + 20) {
+        return true;
+    }
+
+    if (originalWords >= 12 && overlap < 0.55) {
+        return true;
+    }
+
+    return false;
+}
+
+function buildMaxTokens(text) {
+    const wordCount = countWords(text);
+    const dynamicLimit = Math.ceil(wordCount * 1.8) + 30;
+    return Math.max(80, Math.min(1400, dynamicLimit));
+}
+
 function looksLikeExpansion(originalText, editedText) {
     const originalWords = countWords(originalText);
     const editedWords = countWords(editedText);
@@ -80,8 +135,8 @@ function looksLikeExpansion(originalText, editedText) {
         return false;
     }
 
-    const wordsExpandedTooMuch = editedWords > Math.max(originalWords * 1.35, originalWords + 30);
-    const sentencesExpandedTooMuch = editedSentences > originalSentences + 3;
+    const wordsExpandedTooMuch = editedWords > Math.max(originalWords * 1.18, originalWords + 14);
+    const sentencesExpandedTooMuch = editedSentences > originalSentences + 1;
 
     return wordsExpandedTooMuch || sentencesExpandedTooMuch;
 }
@@ -129,7 +184,8 @@ async function requestGrammarEdit(apiKey, text, strictMode = false) {
                     content: text
                 }
             ],
-            temperature: strictMode ? 0 : 0.3
+            temperature: strictMode ? 0 : 0.2,
+            max_tokens: buildMaxTokens(text)
         })
     });
 
@@ -159,7 +215,7 @@ app.post("/api/enhance", async (req, res) => {
         let data = await response.json();
         let enhancedText = data?.choices?.[0]?.message?.content?.trim();
 
-        if (enhancedText && looksLikeExpansion(text, enhancedText)) {
+        if (enhancedText && (looksLikeExpansion(text, enhancedText) || detectChatbotDrift(text, enhancedText))) {
             response = await requestGrammarEdit(apiKey, text, true);
 
             if (!response.ok) {
@@ -169,6 +225,10 @@ app.post("/api/enhance", async (req, res) => {
 
             data = await response.json();
             enhancedText = data?.choices?.[0]?.message?.content?.trim();
+        }
+
+        if (enhancedText && (looksLikeExpansion(text, enhancedText) || detectChatbotDrift(text, enhancedText))) {
+            enhancedText = text.trim();
         }
 
         if (!enhancedText) {
