@@ -4,16 +4,28 @@ const path = require("path");
 
 const app = express();
 const port = process.env.PORT || 3000;
+function normalizeOrigin(value) {
+    if (!value) {
+        return "";
+    }
+
+    try {
+        return new URL(value).origin.toLowerCase();
+    } catch {
+        return value.trim().toLowerCase();
+    }
+}
+
 const frontendOrigins = (process.env.FRONTEND_ORIGINS || "https://abirschool.github.io")
     .split(",")
-    .map((origin) => origin.trim())
+    .map((origin) => normalizeOrigin(origin))
     .filter(Boolean);
 
 const allowedOrigins = new Set(frontendOrigins);
 
 function isLocalOrigin(origin) {
     try {
-        const url = new URL(origin);
+        const url = new URL(normalizeOrigin(origin));
         return ["localhost", "127.0.0.1"].includes(url.hostname);
     } catch {
         return false;
@@ -21,7 +33,7 @@ function isLocalOrigin(origin) {
 }
 
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
+    const origin = normalizeOrigin(req.headers.origin);
 
     if (origin && (allowedOrigins.has(origin) || isLocalOrigin(origin))) {
         res.setHeader("Access-Control-Allow-Origin", origin);

@@ -65,9 +65,9 @@ async function EnhanceGrammar(){
     enhanceButton.classList.add("loading");
     enhanceButton.disabled = true;
     enhanceStatus.textContent = "Enhancing your text...";
+    const endpoint = apiBase ? `${apiBase}/api/enhance` : "/api/enhance";
 
     try {
-        const endpoint = apiBase ? `${apiBase}/api/enhance` : "/api/enhance";
         const response = await fetch(endpoint, {
             method: "POST",
             headers: {
@@ -96,8 +96,8 @@ async function EnhanceGrammar(){
     } catch (error) {
         const isNetworkError = error instanceof TypeError;
         if (isNetworkError) {
-            enhanceStatus.textContent = "Cannot reach backend. Run npm start and keep server.js running on port 3000.";
-            alert("Could not reach backend at http://localhost:3000. Start backend with: npm start");
+            enhanceStatus.textContent = `Cannot reach backend endpoint: ${endpoint}`;
+            alert(`Could not reach backend endpoint: ${endpoint}`);
         } else {
             enhanceStatus.textContent = "Enhancement failed. Check server/API key.";
             alert(`Could not enhance grammar: ${error.message}`);
