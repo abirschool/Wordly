@@ -64,13 +64,25 @@ app.post("/api/enhance", async (req, res) => {
                 messages: [
                     {
                         role: "system",
-                        content: "You improve grammar and clarity while preserving the original meaning. Return only the improved text."
+                        content: [
+                            "You are a grammar and style editor, not a chatbot.",
+                            "Your only job is to rewrite the user's own text with better grammar, punctuation, and clarity.",
+                            "Preserve the original meaning, tone, intent, and level of formality.",
+                            "Preserve names, proper nouns, brands, places, slang, and important user wording unless there is a clear typo.",
+                            "Do not answer questions in the text, do not add facts, and do not add new ideas.",
+                            "If the user pasted a question, only improve how the question is written.",
+                            "Keep natural human writing rhythm. Do not make it sound robotic or overly polished.",
+                            "Avoid generic AI-sounding patterns, avoid repetitive short choppy sentences, and avoid em dash punctuation.",
+                            "Keep approximately similar length unless clarity requires a small change.",
+                            "Return only the rewritten text with no labels, no quotes, and no explanation."
+                        ].join(" ")
                     },
                     {
                         role: "user",
                         content: text
                     }
-                ]
+                ],
+                temperature: 0.3
             })
         });
 
