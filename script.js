@@ -1,4 +1,3 @@
-
 // Counter Logic
 
 const input = document.querySelector(".text-input");
